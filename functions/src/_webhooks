@@ -1,0 +1,16 @@
+success	true
+data	
+id	"wbh_59A9F66F27093783"
+url	"https://us-central1-teste-func-66903.cloudfunctions.net/notificacaoPagamentoWebHook"
+secret	"04e8e6bf843c170903d50df880692c9bd6243e7fb235b5df15d24681010855df"
+status	"ACTIVE"
+eventTypes	
+0	
+id	"evt_3891C9EEE7F6CC9A"
+name	"PAYMENT_NOTIFICATION"
+label	"Uma notificação de pagamento foi gerada"
+status	"ENABLED"
+_links	
+self	
+href	"https://sandbox.boletobancario.com/api-integration/notifications/webhooks/wbh_59A9F66F27093783"
+message	"webhook criado com sucesso"

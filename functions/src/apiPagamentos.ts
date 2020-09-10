@@ -1,4 +1,4 @@
-import axios from 'axios';
+import axios, {AxiosPromise} from 'axios';
 
 export interface Address {
     street: string;
@@ -53,7 +53,19 @@ export default class apiPagamentos {
         })
     }
 
-    async criarCobrancaComSplit(dadosCobranca:Charge, Access_Token:string) {
+    setHeaders(token: string) {
+        const config = {
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'X-Api-Version': this.X_Api_Version,
+                'X-Resource-Token': this.X_Resource_Token_More,
+                'Content-Type': `application/json;charset=UTF-8`,
+            }
+        }
+        return config;
+    }
+
+    async criarCobrancaComSplit(dadosCobranca:Charge, Access_Token:string): Promise<AxiosPromise> {
         const recipientToken_more = this.X_Resource_Token_More;
         const postData = {
             charge: {
@@ -80,75 +92,101 @@ export default class apiPagamentos {
                 document: dadosCobranca.documento_comprador
             }
         };
-        const config = {
-            headers: {
-                'Authorization': `Bearer ${Access_Token}`,
-                'X-Api-Version': this.X_Api_Version,
-                'X-Resource-Token': this.X_Resource_Token_More,
-                'Content-Type': `application/json;charset=UTF-8`,
-            }
-        }
-        return await axios.post(`${this.url_base_pay}/api-integration/charges`, postData, config);
+        return await axios.post(`${this.url_base_pay}/api-integration/charges`, postData, this.setHeaders(Access_Token));
     }
 
-    async tokenizarCartao(creditCardHash:any, Access_Token:string) {
+    async inserirCreditosBoleto(dadosCobranca:any, Access_Token:string): Promise<AxiosPromise> {
+        const postData = {
+            charge: {
+                description: dadosCobranca.descricao,
+                amount: dadosCobranca.valor_cobranca,
+                paymentTypes: dadosCobranca.tipo_pagamento,
+                dueDate: dadosCobranca.data_vencimento
+            },
+            billing: {
+                name: dadosCobranca.nome_comprador,
+                document: dadosCobranca.documento_comprador
+            }
+        };
+        return await axios.post(`${this.url_base_pay}/api-integration/charges`, postData, this.setHeaders(Access_Token));
+    }
+
+    /*
+    confirmação de pagamento via notificação
+
+    1) criar webhook
+    https://dev.juno.com.br/api/v2#operation/createWebhook
+
+    2) PAYMENT_NOTIFICATION
+    https://dev.juno.com.br/api/v2#tag/Notificacoes
+
+    */
+    async criarWebhooks(url:string, event_types: Array<string>, Access_Token: string): Promise<AxiosPromise> {
+        const postData = {
+            url,
+            eventTypes: event_types
+        };
+        return await axios.post(`${this.url_base_pay}/api-integration/notifications/webhooks`, postData, this.setHeaders(Access_Token));
+    }
+
+    async deletaWebhooks(id_webhook:any, Access_Token: string): Promise<AxiosPromise> {
+        return await axios.delete(`${this.url_base_pay}/api-integration/notifications/webhooks/${id_webhook}`, this.setHeaders(Access_Token));
+    }
+
+    async criarCobrancaDiretaMore(dadosCobranca:any, Access_Token:string): Promise<AxiosPromise> {
+        const postData = {
+            charge: {
+                description: dadosCobranca.descricao,
+                amount: dadosCobranca.valor_cobranca,
+                paymentTypes: dadosCobranca.tipo_pagamento
+            },
+            billing: {
+                name: dadosCobranca.nome_comprador,
+                document: dadosCobranca.documento_comprador
+            }
+        };
+        return await axios.post(`${this.url_base_pay}/api-integration/charges`, postData, this.setHeaders(Access_Token));
+    }
+
+    async tokenizarCartao(creditCardHash:any, Access_Token:string): Promise<AxiosPromise> {
         const postData = {
             "creditCardHash": creditCardHash
         }
-        const config = {
-            headers: {
-                'Authorization': `Bearer ${Access_Token}`,
-                'X-Api-Version': this.X_Api_Version,
-                'X-Resource-Token': this.X_Resource_Token_More,
-                'Content-Type': `application/json;charset=UTF-8`,
-            }
-        }
-        return await axios.post(`${this.url_base_pay}/api-integration/credit-cards/tokenization`, postData, config);
+        return await axios.post(`${this.url_base_pay}/api-integration/credit-cards/tokenization`, postData, this.setHeaders(Access_Token));
     }
 
-    async criarPagamentoDeCobranca(chargeId:string, address:Address, creditCardId:string, email:string, Access_Token:string) {
+    async criarPagamentoDeCobrancaMore(chargeId:string, address:Address, creditCardId:any, email:string, Access_Token:string): Promise<AxiosPromise> {
         const postData = {
             chargeId,
             billing:{
                 email,
-                address:address,
-                delayed:true// se true, o valor do destino do prestador do serviço, fica retido até a captura do pagamento (capturarPagamento)
+                address: address,
+                delayed: false// se true, o valor do destino do prestador do serviço fica retido até a captura do pagamento (capturarPagamento)
             },
             creditCardDetails: {creditCardId}
         };
-        const config = {
-            headers: {
-                'Authorization': `Bearer ${Access_Token}`,
-                'X-Api-Version': this.X_Api_Version,
-                'X-Resource-Token': this.X_Resource_Token_More,
-                'Content-Type': `application/json;charset=UTF-8`,
-            }
-        }
-        return await axios.post(`${this.url_base_pay}/api-integration/payments`, postData, config);
+        return await axios.post(`${this.url_base_pay}/api-integration/payments`, postData, this.setHeaders(Access_Token));
     }
 
-    async capturarPagamento(chargeId:any, paymentId:any, Access_Token:string) {
+    async criarPagamentoDeCobranca(chargeId:string, address:Address, creditCardId:string, email:string, Access_Token:string): Promise<AxiosPromise> {
+        const postData = {
+            chargeId,
+            billing:{
+                email,
+                address: address,
+                delayed: true// se true, o valor do destino do prestador do serviço fica retido até a captura do pagamento (capturarPagamento)
+            },
+            creditCardDetails: {creditCardId}
+        };
+        return await axios.post(`${this.url_base_pay}/api-integration/payments`, postData, this.setHeaders(Access_Token));
+    }
+
+    async capturarPagamento(chargeId:any, paymentId:any, Access_Token:string): Promise<AxiosPromise> {
         const postData = {chargeId};
-        const config = {
-            headers: {
-                'Authorization': `Bearer ${Access_Token}`,
-                'X-Api-Version': this.X_Api_Version,
-                'X-Resource-Token': this.X_Resource_Token_More,
-                'Content-Type': `application/json;charset=UTF-8`,
-            }
-        }
-        return await axios.post(`${this.url_base_pay}/api-integration/payments/${paymentId}/capture`, postData, config);
+        return await axios.post(`${this.url_base_pay}/api-integration/payments/${paymentId}/capture`, postData, this.setHeaders(Access_Token));
     }
 
-    async saldo(Access_Token:string) {
-        const config = {
-            headers: {
-                'Authorization': `Bearer ${Access_Token}`,
-                'X-Api-Version': this.X_Api_Version,
-                'X-Resource-Token': this.X_Resource_Token_More,
-                'Content-Type': `application/json;charset=UTF-8`,
-            }
-        }
-        return await axios.get(`${this.url_base_pay}/api-integration/balance`, config);
+    async saldo(Access_Token:string): Promise<AxiosPromise> {
+        return await axios.get(`${this.url_base_pay}/api-integration/balance`, this.setHeaders(Access_Token));
     }
 }
