@@ -28,8 +28,8 @@ export default class apiPagamentos {
 
     constructor(porcentagem_more:number, porcentagem_destino:number) {
         this.url_base_pay = 'https://sandbox.boletobancario.com';
-        this.X_Resource_Token_More = '3A0EEA171E5168286DE02A7FB8E482FC2EE904AF78A072B177A77B6A347E11E7';
-        this.Basic_Auth = 'WGR5b3k5T2wybjNRWGthbjo2YjZLbnV2XkpJT3dNaCxdP2Q6VkB1Vz9MNntibCxtXw==';
+        this.X_Resource_Token_More = '';
+        this.Basic_Auth = '';
         this.X_Api_Version = 2;
 
         this.porcentagem_more = porcentagem_more; // MORE -> recebe 10% do valor total do pagamento
